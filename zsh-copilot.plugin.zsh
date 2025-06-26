@@ -128,8 +128,28 @@ function _fetch_suggestions() {
         fi
 
         message=$(echo "$response" | tr -d '\n' | jq -r '.content[0].text')
+    elif [[ "$ZSH_COPILOT_AI_PROVIDER" == "deepseek" ]]; then
+        # DeepSeek API payload
+        data="{\n            \"model\": \"deepseek-model\",\n            \"prompt\": \"$full_prompt\",\n            \"query\": \"$input\"\n        }"
+        response=$(curl "https://${deepseek_api_url}/v1/complete" \
+            --silent \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
+            -d "$data")
+        response_code=$?
+
+        if [[ "$ZSH_COPILOT_DEBUG" == 'true' ]]; then
+            echo "{\"date\":\"$(date)\",\"log\":\"Called DeepSeek API\",\"input\":\"$input\",\"response\":\"$response\",\"response_code\":\"$response_code\"}" >> /tmp/zsh-copilot.log
+        fi
+
+        if [[ $response_code -ne 0 ]]; then
+            echo "Error fetching suggestions from the DeepSeek API. Please check your API key and try again." > /tmp/.zsh_copilot_error
+            return 1
+        fi
+
+        message=$(echo "$response" | tr -d '\n' | jq -r '.suggestion')
     else
-        echo "Invalid AI provider selected. Please choose 'openai' or 'anthropic'."
+        echo "Invalid AI provider selected. Please choose 'openai', 'anthropic', or 'deepseek'."
         return 1
     fi
 
