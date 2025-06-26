@@ -130,8 +130,20 @@ function _fetch_suggestions() {
         message=$(echo "$response" | tr -d '\n' | jq -r '.content[0].text')
     elif [[ "$ZSH_COPILOT_AI_PROVIDER" == "deepseek" ]]; then
         # DeepSeek API payload
-        data="{\n            \"model\": \"deepseek-model\",\n            \"prompt\": \"$full_prompt\",\n            \"query\": \"$input\"\n        }"
-        response=$(curl "https://${deepseek_api_url}/v1/complete" \
+        data="{
+            \"model\": \"deepseek-chat\",
+            \"messages\": [
+                {
+                    \"role\": \"system\",
+                    \"content\": \"$full_prompt\"
+                },
+                {
+                    \"role\": \"user\",
+                    \"content\": \"$input\"
+                }
+            ]
+        }"
+        response=$(curl "https://${deepseek_api_url}/chat/competitions" \
             --silent \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
@@ -191,6 +203,7 @@ function _suggest_ai() {
     #### Prepare environment
     local openai_api_url=${OPENAI_API_URL:-"api.openai.com"}
     local anthropic_api_url=${ANTHROPIC_API_URL:-"api.anthropic.com"}
+    local deepseek_api_url=${DEEPSEEK_API_URL:-"api.deepseek.com"}
 
     local context_info=""
     if [[ "$ZSH_COPILOT_SEND_CONTEXT" == 'true' ]]; then
